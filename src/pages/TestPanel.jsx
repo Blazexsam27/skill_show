@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
+import * as openai from "openai";
+import { Configuration, OpenAIApi } from "openai";
 import QuestionForm from "../component/QuestionForm";
 
 function TestPanel() {
@@ -11,52 +13,33 @@ function TestPanel() {
     align-items: center;
   `;
 
-  const [questionList, setQuestionList] = useState([]);
-  const [optionsList, setOptionsList] = useState([]);
-  const [answerList, setAnswerList] = useState([]);
+  const configuration = new Configuration({
+    apiKey: import.meta.env.VITE_GPT_API,
+  });
+  delete configuration.baseOptions.headers["User-Agent"];
+  const openai = new OpenAIApi(configuration);
+
+  const [questions, setQuestions] = useState([]);
   const [index, setIndex] = useState(0);
   const systemMessage = {
     role: "system",
     content: "Generate question for a intermediate level programmer.",
   };
 
-  function processAPIResponse(choices) {
-    const mcqs = [];
-    let questions = [];
-    let optionList = [];
-    let answerList = [];
-    choices.forEach((choice) => {
-      if (choice.message && choice.message.content) {
-        const questionWithOptions = choice.message.content.trim();
-        const questionEndIndex = questionWithOptions.indexOf("?");
-        const question = questionWithOptions.slice(0, questionEndIndex + 1);
-        const optionsString = questionWithOptions.slice(questionEndIndex + 1);
-        const options = extractOptions(optionsString);
-        optionList.push([...options]);
-        mcqs.push({ question, options });
-      }
+  function processAPIResponse(mcq_questions) {
+    let question, options, lines;
+    mcq_questions.map((element) => {
+      lines = element.split("\n");
+      question = lines[1].replace("Question: ", "");
+      options = {
+        a: lines[3].slice(4),
+        b: lines[4].slice(4),
+        c: lines[5].slice(4),
+        d: lines[6].slice(4),
+      };
+      console.log("question", question);
+      console.log("options", options);
     });
-    for (let i = 1; i < 5; i++) {
-      for (let j = 0; j < 6; j++) {
-        if (
-          mcqs[i].options[j].match(/answer/) ||
-          mcqs[i].options[j].match(/Answer/)
-        ) {
-          let correctOption = mcqs[i].options[j]
-            .slice(-2)
-            .replace(/[^A-Za-z']/g, "");
-          answerList.push(correctOption);
-        }
-      }
-      let filteredQuestionString = mcqs[i].question.replace(/\n/g, "");
-      questions.push(filteredQuestionString);
-    }
-    setQuestionList(questions);
-    setOptionsList(optionList);
-    setAnswerList(answerList);
-    console.log("Questions", questions);
-    console.log("Answers", answerList);
-    console.log("Options", optionList);
   }
 
   function extractOptions(optionsString) {
@@ -69,39 +52,46 @@ function TestPanel() {
   }
 
   const generateQuestions = async () => {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${import.meta.env.VITE_GPT_API}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        n: 5,
-        max_tokens: 100,
-        options: {
-          prompt: `### Multiple-Choice Question\n\n
-                    'Question: Which of the following options is correct?\n\n
-                    'a) Option A\n
-                    'b) Option B\n
-                    'c) Option C\n
-                    'd) Option D\n\n
-                    'Answer: a)`,
-        },
-        messages: [
-          systemMessage,
-          {
-            role: "user",
-            content: `Please generate array of 6 MCQs regarding react framework along with their answers.`,
-          },
-        ],
-      }),
+    const numQuestions = 5;
+
+    // Generate multiple questions
+    const prompts = Array(numQuestions).fill(
+      "### Multiple-Choice Question\n\nQuestion: Which of the following options is correct?\n\na) Option A\nb) Option B\nc) Option C\nd) Option D\n\nAnswer: "
+    );
+
+    const response = await openai.createCompletion({
+      engine: "text-davinci-003",
+      prompt: prompts,
+      maxTokens: 2048,
+      temperature: 0.5,
     });
-    let eachQuestion = []; // list of question which user will see.
-    const parsedResponse = await response.json();
-    console.log(parsedResponse);
-    processAPIResponse(parsedResponse.choices);
-    setQuestions(eachQuestion);
+    const parsedData = await response.json();
+    console.log(parsedData);
+    // .then((response) => {
+    //   const choices = response.choices;
+    //   const generatedQuestions = choices.map((choice) => {
+    //     const generatedQuestion = choice.text.trim();
+    //     const lines = generatedQuestion.split("\n");
+    //     const question = lines[0].replace("Question: ", "");
+    //     const options = {
+    //       a: lines[1].slice(4),
+    //       b: lines[2].slice(4),
+    //       c: lines[3].slice(4),
+    //       d: lines[4].slice(4),
+    //     };
+    //     const answer = lines[6].slice(8);
+    //     console.log("question", question);
+    //     console.log("options", options);
+    //     console.log("answer", answer);
+    //     return { question, options, answer };
+    //   });
+
+    //   setQuestions(generatedQuestions);
+    // })
+    // .catch((error) => {
+    //   console.error("Error:", error);
+    // });
+    // processAPIResponse(mcq_questions);
   };
 
   const evaluateResults = (e) => {
