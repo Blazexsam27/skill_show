@@ -2,129 +2,101 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import QuestionForm from "../component/QuestionForm";
 
-function TestPanel() {
+function TestPanel(props) {
   const Wrapper = styled.div`
     display: flex;
     width: 100vw;
     height: 100vh;
     justify-content: center;
+    flex-direction: column;
+    flex-wrap: wrap;
     align-items: center;
-  `;
-
-  const [questionList, setQuestionList] = useState([]);
-  const [optionsList, setOptionsList] = useState([]);
-  const [answerList, setAnswerList] = useState([]);
-  const [index, setIndex] = useState(0);
-  const systemMessage = {
-    role: "system",
-    content: "Generate question for a intermediate level programmer.",
-  };
-
-  function processAPIResponse(choices) {
-    const mcqs = [];
-    let questions = [];
-    let optionList = [];
-    let answerList = [];
-    choices.forEach((choice) => {
-      if (choice.message && choice.message.content) {
-        const questionWithOptions = choice.message.content.trim();
-        const questionEndIndex = questionWithOptions.indexOf("?");
-        const question = questionWithOptions.slice(0, questionEndIndex + 1);
-        const optionsString = questionWithOptions.slice(questionEndIndex + 1);
-        const options = extractOptions(optionsString);
-        optionList.push([...options]);
-        mcqs.push({ question, options });
-      }
-    });
-    for (let i = 1; i < 5; i++) {
-      for (let j = 0; j < 6; j++) {
-        if (
-          mcqs[i].options[j].match(/answer/) ||
-          mcqs[i].options[j].match(/Answer/)
-        ) {
-          let correctOption = mcqs[i].options[j]
-            .slice(-2)
-            .replace(/[^A-Za-z']/g, "");
-          answerList.push(correctOption);
-        }
-      }
-      let filteredQuestionString = mcqs[i].question.replace(/\n/g, "");
-      questions.push(filteredQuestionString);
+    font-family: var(--josefin-font);
+    font-size: 1.3rem;
+    .instructions {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      padding: 10px;
     }
-    setQuestionList(questions);
-    setOptionsList(optionList);
-    setAnswerList(answerList);
-    console.log("Questions", questions);
-    console.log("Answers", answerList);
-    console.log("Options", optionList);
-  }
-
-  function extractOptions(optionsString) {
-    const options = optionsString
-      .split("\n")
-      .map((option) => option.trim())
-      .filter((option) => option !== ""); // Filter out empty options
-
-    return options;
-  }
-
-  const generateQuestions = async () => {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    .start-btn {
+      border: none;
+      border-radius: 3px;
+      min-width: 100px;
+      padding: 10px 45px;
+      background: ${({ theme }) => theme.colors.sasquatch};
+      color: white;
+      transition: 0.4s;
+      &:hover {
+        transform: scale(1.05);
+        transition: 0.4s;
+      }
+    }
+  `;
+  const subject = "javascript language";
+  const [questionSet, setQuestionSet] = useState([]);
+  const [selectedAnswers, setSelectedAnswers] = useState([]);
+  const [index, setIndex] = useState(0);
+  const getQuestions = async () => {
+    const response = await fetch("/api/test", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${import.meta.env.VITE_GPT_API}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        n: 5,
-        max_tokens: 100,
-        options: {
-          prompt: `### Multiple-Choice Question\n\n
-                    'Question: Which of the following options is correct?\n\n
-                    'a) Option A\n
-                    'b) Option B\n
-                    'c) Option C\n
-                    'd) Option D\n\n
-                    'Answer: a)`,
-        },
-        messages: [
-          systemMessage,
-          {
-            role: "user",
-            content: `Please generate array of 6 MCQs regarding react framework along with their answers.`,
-          },
-        ],
+        prompt: `Please generate an MCQ with answer on ${subject} in this format\n Question: Which of the following options is correct?\n a) Option A\n b) Option B\n c) Option C\n d) Option D\n Answer: a)`,
       }),
     });
-    let eachQuestion = []; // list of question which user will see.
     const parsedResponse = await response.json();
-    console.log(parsedResponse);
-    processAPIResponse(parsedResponse.choices);
-    setQuestions(eachQuestion);
-  };
-
-  const evaluateResults = (e) => {
-    e.preventDefault();
-  };
-
-  const handleQuestionSubmit = (e) => {
-    e.preventDefault();
-    console.log(e.target);
+    console.log(parsedResponse.questions);
+    // setQuestionSet(parsedResponse.questions);
   };
 
   useEffect(() => {
-    generateQuestions();
+    // getQuestions();
   }, []);
+
+  /* testing json data
+   */
+  let tempQuestion = [
+    {
+      question: "what the dog doin?",
+      options: ["opt1", "opt2", "opt3", "opt4"],
+      answer: "a)",
+    },
+    {
+      question: "who was doing the party?",
+      options: ["opt1", "opt2", "opt3", "opt4"],
+      answer: "b)",
+    },
+  ];
 
   return (
     <Wrapper>
-      {/* <QuestionForm
-        handleQuestionSubmi={handleQuestionSubmit}
-        evaluateResults={evaluateResults}
-        question={questionList[index]}
-        options={optionsList[index]}
-      /> */}
+      <div className="instructions">
+        <b>Important Rules:</b>
+        <p>
+          ⭐ You'll be given a set of 10 questions based on your selected topics
+          with four options each.
+        </p>
+        <p>
+          ⭐ You'll be given a time limit of overall 10 mins to complete as many
+          questions as possible.
+        </p>
+        <p>
+          ⭐ Once a answer is submitted you cannot move to previous question.
+        </p>
+        <p>
+          ⭐ If timit limit expires all your test will be submitted
+          automatically and you will get the evaluated result.
+        </p>
+      </div>
+      <button className="start-btn">Start</button>
+      <QuestionForm
+        selectedAnswers={selectedAnswers}
+        setSelectedAnswers={setSelectedAnswers}
+        setIndex={setIndex}
+        index={index}
+        data={tempQuestion[index]}
+      />
     </Wrapper>
   );
 }
