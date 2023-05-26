@@ -1,9 +1,9 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
-import TestPanel from "./pages/TestPanel";
 import styled, { ThemeProvider } from "styled-components";
 import { UserProvider } from "./context/userContext";
+import Explore from "./pages/Explore";
 
 function App() {
   const Wrapper = styled.div`
@@ -25,11 +25,7 @@ function App() {
       darkSapphire: "#0c2461",
       bgScreen: "#fff",
       warning: "#e74c3c",
-      navbarBg: `rgb(83, 0, 42) radial-gradient(
-        circle,
-        rgba(83, 0, 42, 1) 0%,
-        rgba(1, 0, 0, 1) 100%
-      )`,
+      midnight: "#2c3e50",
       helper: "#00cec9",
       bg: "#dfe4ea",
       footer_bg: "#0a1435",
@@ -56,7 +52,7 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Home />}></Route>
-                <Route path="/test" element={<TestPanel />}></Route>
+                <Route path="/explore" element={<Explore />}></Route>
               </Routes>
             </BrowserRouter>
           </Wrapper>
