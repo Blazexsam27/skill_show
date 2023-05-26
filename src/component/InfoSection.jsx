@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useUserContext } from "../context/userContext";
+import { NavLink } from "react-router-dom";
 import styled from "styled-components";
 import CategoryButton from "./CategoryButton";
 
@@ -21,8 +22,12 @@ function InfoSection(props) {
     .seperator {
       width: 100%;
       height: 40px;
-      background: #f78fb3;
+      background: ${({ theme }) => theme.colors.midnight};
       margin-bottom: 20px;
+    }
+    .info-text {
+      font-size: 1.5rem;
+      color: #fff;
     }
 
     .skill-list-container {
@@ -41,14 +46,18 @@ function InfoSection(props) {
   return (
     <Wrapper>
       <p className="greet">👋 {userDetails.displayName}</p>
-      <p className="info-text">
-        You will get 10 random generated MCQs which you need to solve within
-        given time limit.
-      </p>
       <div className="seperator"></div>
       <div className="skill-list-container">
         {userTechStack.map((item) => {
-          return <CategoryButton data={item.stack.name} />;
+          return (
+            <NavLink
+              to={"/explore"}
+              state={{ topic: item.stack.name }}
+              key={item.stack.name}
+            >
+              <CategoryButton data={item.stack.name} />
+            </NavLink>
+          );
         })}
       </div>
     </Wrapper>

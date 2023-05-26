@@ -6,7 +6,7 @@ function CategoryButton(props) {
     border-radius: 7px;
     padding: 10px 25px;
     color: ${({ theme }) => theme.colors.white};
-    background: ${({ theme }) => theme.colors.helper};
+    background: #273c75;
     cursor: pointer;
     transition: 0.3s;
     &:hover {
